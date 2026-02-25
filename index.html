@@ -3,233 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baseball Pitch Monitor</title>
+    <title>PitchGuard • Youth Arm Monitor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(to bottom, #111, #222);
-            color: white;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        h1 {
-            color: #00ff88;
-            text-shadow: 0 0 10px #00ff88;
-            font-size: 2.5rem;
-            margin-bottom: 20px;
-            animation: glow 2s infinite alternate;
-        }
-        .display {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin: 15px 0;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s, box-shadow 0.3s;
-            width: 80%;
-            max-width: 400px;
-        }
-        .display:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
-        }
-        #count {
-            color: #ffcc00;
-            text-shadow: 0 0 5px #ffcc00;
-        }
-        #speed {
-            color: #00ff88;
-            text-shadow: 0 0 5px #00ff88;
-        }
-        #spin {
-            color: #ff4444;
-            text-shadow: 0 0 5px #ff4444;
-        }
-        #stress {
-            font-size: 2.2rem;
-            margin: 30px 0;
-            padding: 20px;
-            border-radius: 20px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
-            transition: all 0.5s;
-            width: 80%;
-            max-width: 400px;
-            position: relative;
-            overflow: hidden;
-        }
-        #stress::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1), transparent);
-            opacity: 0.5;
-        }
-        .green {
-            background: linear-gradient(135deg, #004400, #008800);
-            color: #00ff88;
-            text-shadow: 0 0 10px #00ff88;
-        }
-        .yellow {
-            background: linear-gradient(135deg, #444400, #888800);
-            color: #ffff00;
-            text-shadow: 0 0 10px #ffff00;
-        }
-        .red {
-            background: linear-gradient(135deg, #440000, #880000);
-            color: #ff4444;
-            text-shadow: 0 0 10px #ff4444;
-            animation: pulse 1.5s infinite;
-        }
-        button {
-            background: linear-gradient(135deg, #0066ff, #00aaff);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            margin: 20px;
-            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.5);
-            transition: all 0.3s;
-        }
-        button:hover {
-            background: linear-gradient(135deg, #0088ff, #00ccff);
-            box-shadow: 0 6px 20px rgba(0, 136, 255, 0.7);
-            transform: translateY(-2px);
-        }
-        @keyframes glow {
-            from { text-shadow: 0 0 5px #00ff88; }
-            to { text-shadow: 0 0 15px #00ff88; }
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+        
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .title-font { font-family: 'Space Grotesk', sans-serif; }
+        .neon-glow { text-shadow: 0 0 20px #00ff99; }
+        .card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card:hover { transform: translateY(-8px) scale(1.02); }
+        .stress-bar { transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
     </style>
 </head>
-<body>
+<body class="bg-zinc-950 text-white min-h-screen pb-12">
 
-    <h1>Pitch Monitor</h1>
-    <div class="display">Pitch Count: <span id="count">0</span></div>
-    <div class="display">Speed: <span id="speed">-- mph</span></div>
-    <div class="display">Spin Rate: <span id="spin">-- rpm</span></div>
+    <div class="max-w-2xl mx-auto px-4 pt-8">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h1 class="title-font text-5xl font-bold tracking-tighter neon-glow text-emerald-400">PITCHGUARD</h1>
+                <p class="text-zinc-400 text-sm tracking-[3px]">YOUTH ARM PROTECTION MONITOR</p>
+            </div>
+        </div>
 
-    <div id="stress" class="green">Arm Stress: Low (Safe - Keep going!)</div>
+        <!-- Pitcher Profile -->
+        <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-emerald-400">Pitcher Profile</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-zinc-400 mb-1">Age (years)</label>
+                    <input type="number" id="age" value="12" min="8" max="18" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm text-zinc-400 mb-1">Sex</label>
+                    <select id="sex" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                        <option value="boy">Boy</option>
+                        <option value="girl">Girl</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-zinc-400 mb-1">Height (inches)</label>
+                    <input type="number" id="height" value="60" min="40" max="80" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-sm text-zinc-400 mb-1">Weight (lbs)</label>
+                    <input type="number" id="weight" value="100" min="50" max="250" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                </div>
+            </div>
+            <button onclick="updateProfile()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-black font-semibold py-2 px-6 rounded-xl">
+                Apply Profile
+            </button>
+        </div>
 
-    <br>
-    <button onclick="simulatePitch()">Fake Pitch (for testing)</button>
+        <!-- Buttons -->
+        <div class="flex gap-3 mb-8 justify-center">
+            <button onclick="simulatePitch()" class="flex-1 bg-white hover:bg-zinc-100 text-zinc-900 font-semibold py-4 rounded-2xl text-lg transition-all active:scale-95">
+                SIMULATE PITCH
+            </button>
+            <button onclick="resetSession()" class="flex-1 bg-zinc-800 hover:bg-zinc-700 font-semibold py-4 rounded-2xl text-lg transition-all active:scale-95">
+                RESET
+            </button>
+        </div>
 
-    <script>
-        let pitchCount = 0;
-        let recentSpeeds = []; // Last 10 speeds
-        let recentSpins = []; // Last 10 spins (new)
-        let maxStressLevel = 0; // Track highest achieved stress (0=low,1=med,2=high)
+        <!-- Metrics -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6">
+                <p class="text-zinc-400 text-sm">TOTAL PITCHES</p>
+                <p id="pitchCount" class="text-6xl font-bold title-font tracking-tighter text-white">0</p>
+            </div>
+            <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6">
+                <p class="text-zinc-400 text-sm">LAST VELO</p>
+                <p id="lastVelo" class="text-6xl font-bold title-font tracking-tighter text-emerald-400">--</p>
+                <p class="text-xs text-zinc-500">mph</p>
+            </div>
+            <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6">
+                <p class="text-zinc-400 text-sm">AVG VELO</p>
+                <p id="avgVelo" class="text-6xl font-bold title-font tracking-tighter text-emerald-400">--</p>
+                <p class="text-xs text-zinc-500">mph</p>
+            </div>
+            <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6">
+                <p class="text-zinc-400 text-sm">PEAK VELO</p>
+                <p id="peakVelo" class="text-6xl font-bold title-font tracking-tighter text-emerald-400">--</p>
+                <p class="text-xs text-zinc-500">mph</p>
+            </div>
+        </div>
 
-        const countDisplay = document.getElementById('count');
-        const speedDisplay = document.getElementById('speed');
-        const spinDisplay = document.getElementById('spin');
-        const stressDisplay = document.getElementById('stress');
+        <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6 mb-8">
+            <div class="flex justify-between items-baseline">
+                <p class="text-zinc-400 text-sm">SPIN RATE</p>
+                <p id="lastSpin" class="text-5xl font-bold title-font tracking-tighter text-rose-400">--</p>
+            </div>
+            <p class="text-xs text-zinc-500">rpm</p>
+        </div>
 
-        function updateStress(speed, spin) {
-            // Add to recent histories
-            recentSpeeds.push(parseFloat(speed));
-            if (recentSpeeds.length > 10) recentSpeeds.shift();
-            recentSpins.push(spin);
-            if (recentSpins.length > 10) recentSpins.shift();
+        <div class="card bg-zinc-900/70 border border-zinc-800 rounded-3xl p-8 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <p class="text-rose-400 font-medium">ARM STRESS INDEX</p>
+                    <p id="stressLevel" class="text-3xl font-semibold text-white">LOW</p>
+                </div>
+                <div class="text-right">
+                    <p id="stressPercent" class="text-6xl font-bold title-font tracking-tighter text-white">0</p>
+                    <p class="text-sm text-zinc-500 -mt-2">%</p>
+                </div>
+            </div>
+            <div class="h-5 bg-zinc-800 rounded-2xl overflow-hidden">
+                <div id="stressBar" class="h-full bg-gradient-to-r from-emerald-400 via-yellow-400 to-rose-500 stress-bar" style="width: 0%"></div>
+            </div>
+            <p id="stressMessage" class="text-center text-sm mt-3 text-emerald-400 font-medium">
+                Safe — keep throwing!
+            </p>
+        </div>
 
-            // Base from count (grows after ~30-40)
-            let countStress = Math.min(80, pitchCount * 1.2);
+        <div class="bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6">
+            <canvas id="pitchChart" height="240"></canvas>
+        </div>
+    </div>
 
-            // Velocity factor (higher = more stress)
-            let velocityFactor = (parseFloat(speed) - 48) / (62 - 48); // 0-1
-            let velStress = velocityFactor * 40;
+<script>
+let pitchCount = 0;
+let velocities = [];
+let spins = [];
+let maxStress = 0;
+let recentSpeeds = [];
 
-            // Spin factor (higher spin = more torque/stress, especially >1600 rpm)
-            let spinFactor = (spin - 1300) / (1900 - 1300); // 0-1
-            let spinStress = spinFactor * 30; // Up to +30 for high spin
+let profile = { age: 12, sex: 'boy', height: 60, weight: 100 };
+let stressMultiplier = 1.0;
 
-            // Fatigue proxy: high recent avg speed/spin multiplies
-            let avgRecentSpeed = recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length || 0;
-            let avgRecentSpin = recentSpins.reduce((a, b) => a + b, 0) / recentSpins.length || 0;
-            let fatigueMultiplier = 1.0;
-            if (avgRecentSpeed > 55 || avgRecentSpin > 1700) fatigueMultiplier = 1.5;
-            else if (avgRecentSpeed > 52 || avgRecentSpin > 1600) fatigueMultiplier = 1.2;
+let chart;
+let chartData = {
+    labels: [],
+    datasets: [
+        { label: 'Velocity (mph)', borderColor: '#00ff99', borderWidth: 4, tension: 0.3, yAxisID: 'y', data: [] },
+        { label: 'Spin Rate (rpm)', borderColor: '#ff3366', borderWidth: 3, tension: 0.3, yAxisID: 'y1', data: [] }
+    ]
+};
 
-            // Total stress
-            let totalStress = (countStress + velStress + spinStress) * fatigueMultiplier;
-
-            // Enforce non-decreasing: use max of current calc and previous max
-            totalStress = Math.max(totalStress, getStressFromLevel(maxStressLevel));
-
-            // Classify and update max level
-            let newLevel = 0;
-            if (totalStress < 40) {
-                newLevel = 0;
-            } else if (totalStress < 70) {
-                newLevel = 1;
-            } else {
-                newLevel = 2;
+function initChart() {
+    chart = new Chart(document.getElementById('pitchChart'), {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#ddd' } } },
+            scales: {
+                x: { grid: { color: '#333' }, ticks: { color: '#666' } },
+                y:  { position: 'left', grid: { color: '#333' }, ticks: { color: '#00ff99' } },
+                y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#ff3366' } }
             }
-            maxStressLevel = Math.max(maxStressLevel, newLevel);
-
-            // Display based on level
-            let level, message, className;
-            if (maxStressLevel === 0) {
-                level = 'Low';
-                message = 'Safe - Keep going!';
-                className = 'green';
-            } else if (maxStressLevel === 1) {
-                level = 'Medium';
-                message = 'Caution - Monitor arm, consider rest soon';
-                className = 'yellow';
-            } else {
-                level = 'High';
-                message = 'High Risk - Stop pitching to prevent injury!';
-                className = 'red';
-            }
-
-            stressDisplay.textContent = `Arm Stress: ${level} (${message})`;
-            stressDisplay.className = className;
         }
+    });
+}
 
-        // Helper: min stress for a level
-        function getStressFromLevel(level) {
-            if (level === 0) return 0;
-            if (level === 1) return 40;
-            return 70;
-        }
+function updateProfile() {
+    profile.age = parseInt(document.getElementById('age').value) || 12;
+    profile.sex = document.getElementById('sex').value;
+    profile.height = parseInt(document.getElementById('height').value) || 60;
+    profile.weight = parseInt(document.getElementById('weight').value) || 100;
 
-        // Simulate pitch
-        function simulatePitch() {
-            const minSpeed = 48;
-            const maxSpeed = 62;
-            const speed = (Math.random() * (maxSpeed - minSpeed) + minSpeed).toFixed(1);
+    const ageFactor = Math.max(0.5, profile.age / 15);
+    const sizeFactor = (profile.height / 65) * (profile.weight / 120);
+    const sexFactor = profile.sex === 'boy' ? 1.15 : 0.85;
+    stressMultiplier = 1 / (ageFactor * sizeFactor * sexFactor * 1.15);
 
-            const minSpin = 1300;
-            const maxSpin = 1900;
-            const spin = Math.floor(Math.random() * (maxSpin - minSpin + 1) + minSpin);
+    alert(`Profile updated for ${profile.age}yo ${profile.sex} (${profile.height}" ${profile.weight} lbs)`);
+}
 
-            pitchCount++;
-            countDisplay.textContent = pitchCount;
+function simulatePitch() {
+    const isFastball = Math.random() < 0.5;
 
-            speedDisplay.textContent = speed + ' mph';
-            spinDisplay.textContent = spin + ' rpm';
+    // Realistic base ranges based on age + small height/weight/sex bonus
+    let baseFast = 42 + (profile.age - 8) * 1.8 + (profile.height - 55) * 0.3 + (profile.weight - 80) * 0.08;
+    let baseCurve = baseFast * 0.78;   // curves always slower
 
-            updateStress(speed, spin);
-        }
-    </script>
+    if (profile.sex === 'girl') {
+        baseFast *= 0.92;
+        baseCurve *= 0.92;
+    }
 
+    let speed, spin;
+    if (isFastball) {
+        speed = (Math.random() * 6 + baseFast).toFixed(1);           // 55-60+ for older boys
+        spin  = Math.floor(Math.random() * 450 + 1350);              // lower spin on fastballs
+    } else {
+        speed = (Math.random() * 8 + baseCurve).toFixed(1);          // 43-52+ for older boys
+        spin  = Math.floor(Math.random() * 500 + 1950);              // higher spin on curves
+    }
+
+    // Clamp to realistic youth limits
+    speed = Math.max(38, Math.min(72, speed));
+    spin  = Math.max(1200, Math.min(2600, spin));
+
+    pitchCount++;
+    velocities.push(parseFloat(speed));
+    spins.push(spin);
+    recentSpeeds.push(parseFloat(speed));
+    if (recentSpeeds.length > 8) recentSpeeds.shift();
+
+    document.getElementById('pitchCount').textContent = pitchCount;
+    document.getElementById('lastVelo').textContent = speed;
+    document.getElementById('lastSpin').textContent = spin;
+
+    let avg = (velocities.reduce((a,b)=>a+b,0) / velocities.length).toFixed(1);
+    let peak = Math.max(...velocities).toFixed(1);
+    document.getElementById('avgVelo').textContent = avg;
+    document.getElementById('peakVelo').textContent = peak;
+
+    updateCumulativeStress(parseFloat(speed), spin);
+
+    // Auto-adjust chart axes to fit all data
+    const allVelo = chartData.datasets[0].data;
+    const allSpin = chartData.datasets[1].data;
+    if (allVelo.length > 0) {
+        chart.options.scales.y.min = Math.max(35, Math.floor(Math.min(...allVelo)) - 5);
+        chart.options.scales.y.max = Math.ceil(Math.max(...allVelo)) + 5;
+    }
+    if (allSpin.length > 0) {
+        chart.options.scales.y1.min = Math.max(1100, Math.floor(Math.min(...allSpin)) - 100);
+        chart.options.scales.y1.max = Math.ceil(Math.max(...allSpin)) + 100;
+    }
+
+    chartData.labels.push(pitchCount);
+    chartData.datasets[0].data.push(speed);
+    chartData.datasets[1].data.push(spin);
+    chart.update();
+}
+
+function updateCumulativeStress(speed, spin) {
+    let raw = pitchCount * 3.3 * stressMultiplier;
+    raw += (speed - 48) * 1.1;
+    raw += (spin - 1700) / 40;
+    raw += ((recentSpeeds.reduce((a,b)=>a+b,0)/recentSpeeds.length || 0) - 50) * 0.7;
+
+    maxStress = Math.max(maxStress, raw);
+    maxStress = Math.min(100, maxStress);
+
+    let percent = Math.round(maxStress);
+    document.getElementById('stressPercent').textContent = percent;
+    document.getElementById('stressBar').style.width = percent + '%';
+
+    let level = 'LOW', message = 'Safe — keep throwing!', msgClass = 'text-emerald-400';
+
+    if (percent >= 75) {
+        level = 'CRITICAL';
+        message = 'STOP PITCHING — High injury risk!';
+        msgClass = 'text-rose-400 font-bold';
+        document.getElementById('stressBar').style.background = 'linear-gradient(to right, #f43f5e, #e11d48)';
+    } else if (percent >= 50) {
+        level = 'CAUTION';
+        message = 'Strong caution — rest soon';
+        msgClass = 'text-yellow-400';
+        document.getElementById('stressBar').style.background = 'linear-gradient(to right, #eab308, #f59e0b)';
+    } else if (percent >= 25) {
+        level = 'MODERATE';
+        message = 'Moderate risk building';
+        msgClass = 'text-amber-300';
+        document.getElementById('stressBar').style.background = 'linear-gradient(to right, #fbbf24, #d97706)';
+    } else {
+        document.getElementById('stressBar').style.background = 'linear-gradient(to right, #10b981, #34d399)';
+    }
+
+    document.getElementById('stressLevel').textContent = level;
+    document.getElementById('stressMessage').textContent = message;
+    document.getElementById('stressMessage').className = `text-center text-sm mt-3 ${msgClass} font-medium`;
+}
+
+function resetSession() {
+    pitchCount = 0;
+    velocities = [];
+    spins = [];
+    recentSpeeds = [];
+    maxStress = 0;
+
+    document.getElementById('pitchCount').textContent = '0';
+    document.getElementById('lastVelo').textContent = '--';
+    document.getElementById('avgVelo').textContent = '--';
+    document.getElementById('peakVelo').textContent = '--';
+    document.getElementById('lastSpin').textContent = '--';
+
+    document.getElementById('stressPercent').textContent = '0';
+    document.getElementById('stressBar').style.width = '0%';
+    document.getElementById('stressLevel').textContent = 'LOW';
+    document.getElementById('stressMessage').textContent = 'Safe — keep throwing!';
+    document.getElementById('stressMessage').className = 'text-center text-sm mt-3 text-emerald-400 font-medium';
+
+    chartData.labels = [];
+    chartData.datasets[0].data = [];
+    chartData.datasets[1].data = [];
+    chart.update();
+}
+
+window.onload = () => {
+    initChart();
+    updateProfile();
+};
+</script>
 </body>
 </html>
