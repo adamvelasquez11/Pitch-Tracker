@@ -14,7 +14,7 @@
         .neon-glow { text-shadow: 0 0 20px #00ff99; }
         .card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .card:hover { transform: translateY(-8px) scale(1.02); }
-        .stress-bar { transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .stress-bar { transition: width 0.9s cubic-bezier(0.34, 1.56, 0.64, 1); }
     </style>
 </head>
 <body class="bg-zinc-950 text-white min-h-screen pb-12">
@@ -33,7 +33,7 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm text-zinc-400 mb-1">Age (years)</label>
-                    <input type="number" id="age" value="12" min="8" max="18" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                    <input type="number" id="age" value="15" min="8" max="30" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
                 </div>
                 <div>
                     <label class="block text-sm text-zinc-400 mb-1">Sex</label>
@@ -44,16 +44,17 @@
                 </div>
                 <div>
                     <label class="block text-sm text-zinc-400 mb-1">Height (inches)</label>
-                    <input type="number" id="height" value="60" min="40" max="80" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                    <input type="number" id="height" value="72" min="40" max="80" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
                 </div>
                 <div>
                     <label class="block text-sm text-zinc-400 mb-1">Weight (lbs)</label>
-                    <input type="number" id="weight" value="100" min="50" max="250" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
+                    <input type="number" id="weight" value="200" min="50" max="300" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white">
                 </div>
             </div>
             <button onclick="updateProfile()" class="mt-4 bg-emerald-600 hover:bg-emerald-500 text-black font-semibold py-2 px-6 rounded-xl">
                 Apply Profile
             </button>
+            <div id="profileMessage" class="mt-3 text-sm text-emerald-400 font-medium"></div>
         </div>
 
         <!-- Buttons -->
@@ -125,11 +126,10 @@
 let pitchCount = 0;
 let velocities = [];
 let spins = [];
-let maxStress = 0;
+let armStress = 0;
 let recentSpeeds = [];
 
-let profile = { age: 12, sex: 'boy', height: 60, weight: 100 };
-let stressMultiplier = 1.0;
+let profile = { age: 15, sex: 'boy', height: 72, weight: 200 };
 
 let chart;
 let chartData = {
@@ -157,72 +157,102 @@ function initChart() {
     });
 }
 
+function getDailyPitchLimit() {
+    let age = profile.age;
+    let baseLimit;
+
+    if (profile.sex === 'boy') {
+        if (age <= 9) baseLimit = 32;
+        else if (age <= 10) baseLimit = 35;
+        else if (age <= 12) baseLimit = 48;
+        else if (age <= 14) baseLimit = 65;
+        else if (age <= 15) baseLimit = 75;
+        else if (age <= 16) baseLimit = 85;
+        else if (age <= 17) baseLimit = 95;
+        else if (age <= 18) baseLimit = 95;
+        else if (age <= 20) baseLimit = 105;
+        else if (age <= 24) baseLimit = 115;
+        else baseLimit = 130;
+    } else {
+        if (age <= 11) baseLimit = 28;
+        else if (age <= 12) baseLimit = 35;
+        else if (age <= 15) baseLimit = 50;
+        else if (age <= 17) baseLimit = 68;
+        else if (age <= 20) baseLimit = 92;
+        else baseLimit = 105;
+    }
+
+    // Body-size adjustment (heavier/taller get a realistic boost)
+    let bodyBonus = 1 + (profile.weight - 125) * 0.00145 + (profile.height - 62) * 0.0035;
+    bodyBonus = Math.max(0.92, Math.min(1.32, bodyBonus));
+    let adjusted = Math.round(baseLimit * bodyBonus);
+
+    // Introduce randomization around the adjusted limit (range roughly ±12–15%)
+    // This creates natural variation so not everyone hits exactly the same number
+    let variation = Math.floor(Math.random() * 19) - 9;  // -9 to +9
+    let randomizedLimit = adjusted + variation;
+
+    // Hard cap: no profile should exceed ~100–105 effective limit
+    randomizedLimit = Math.min(105, Math.max(25, randomizedLimit));
+
+    return randomizedLimit;
+}
+
 function updateProfile() {
-    profile.age = parseInt(document.getElementById('age').value) || 12;
+    profile.age = parseInt(document.getElementById('age').value) || 15;
     profile.sex = document.getElementById('sex').value;
-    profile.height = parseInt(document.getElementById('height').value) || 60;
-    profile.weight = parseInt(document.getElementById('weight').value) || 100;
+    profile.height = parseInt(document.getElementById('height').value) || 72;
+    profile.weight = parseInt(document.getElementById('weight').value) || 200;
 
-    const ageFactor = Math.max(0.5, profile.age / 15);
-    const sizeFactor = (profile.height / 65) * (profile.weight / 120);
-    const sexFactor = profile.sex === 'boy' ? 1.15 : 0.85;
-    stressMultiplier = 1 / (ageFactor * sizeFactor * sexFactor * 1.15);
-
-    alert(`Profile updated for ${profile.age}yo ${profile.sex} (${profile.height}" ${profile.weight} lbs)`);
+    const msg = document.getElementById('profileMessage');
+    msg.textContent = `Profile updated — ${profile.age}yo ${profile.sex} (${profile.height}" ${profile.weight} lbs)`;
+    setTimeout(() => msg.textContent = '', 4500);
 }
 
 function simulatePitch() {
-    const isFastball = Math.random() < 0.5;
+    const isFastball = Math.random() < 0.70;
 
-    // Realistic base ranges based on age + small height/weight/sex bonus
-    let baseFast = 42 + (profile.age - 8) * 1.8 + (profile.height - 55) * 0.3 + (profile.weight - 80) * 0.08;
-    let baseCurve = baseFast * 0.78;   // curves always slower
-
-    if (profile.sex === 'girl') {
-        baseFast *= 0.92;
-        baseCurve *= 0.92;
-    }
+    let baseVelo = 38 + (profile.age - 8) * 2.15 + (profile.height - 55) * 0.32 + (profile.weight - 80) * 0.085;
+    if (profile.sex === 'girl') baseVelo *= 0.9;
 
     let speed, spin;
     if (isFastball) {
-        speed = (Math.random() * 6 + baseFast).toFixed(1);           // 55-60+ for older boys
-        spin  = Math.floor(Math.random() * 450 + 1350);              // lower spin on fastballs
+        speed = (Math.random() * 6 + baseVelo).toFixed(1);
+        spin  = Math.floor(Math.random() * 420 + 1380);
     } else {
-        speed = (Math.random() * 8 + baseCurve).toFixed(1);          // 43-52+ for older boys
-        spin  = Math.floor(Math.random() * 500 + 1950);              // higher spin on curves
+        speed = (Math.random() * 7 + baseVelo * 0.82).toFixed(1);
+        spin  = Math.floor(Math.random() * 480 + 1980);
     }
 
-    // Clamp to realistic youth limits
-    speed = Math.max(38, Math.min(72, speed));
-    spin  = Math.max(1200, Math.min(2600, spin));
+    speed = Math.max(38, Math.min(74, parseFloat(speed)));
+    spin  = Math.max(1250, Math.min(2650, spin));
 
     pitchCount++;
-    velocities.push(parseFloat(speed));
+    velocities.push(speed);
     spins.push(spin);
-    recentSpeeds.push(parseFloat(speed));
+    recentSpeeds.push(speed);
     if (recentSpeeds.length > 8) recentSpeeds.shift();
 
     document.getElementById('pitchCount').textContent = pitchCount;
-    document.getElementById('lastVelo').textContent = speed;
+    document.getElementById('lastVelo').textContent = speed.toFixed(1);
     document.getElementById('lastSpin').textContent = spin;
 
-    let avg = (velocities.reduce((a,b)=>a+b,0) / velocities.length).toFixed(1);
-    let peak = Math.max(...velocities).toFixed(1);
+    let avg = velocities.length ? (velocities.reduce((a,b)=>a+b,0) / velocities.length).toFixed(1) : '--';
+    let peak = velocities.length ? Math.max(...velocities).toFixed(1) : '--';
     document.getElementById('avgVelo').textContent = avg;
     document.getElementById('peakVelo').textContent = peak;
 
-    updateCumulativeStress(parseFloat(speed), spin);
+    updateCumulativeStress(speed, spin, isFastball);
 
-    // Auto-adjust chart axes to fit all data
     const allVelo = chartData.datasets[0].data;
     const allSpin = chartData.datasets[1].data;
     if (allVelo.length > 0) {
-        chart.options.scales.y.min = Math.max(35, Math.floor(Math.min(...allVelo)) - 5);
-        chart.options.scales.y.max = Math.ceil(Math.max(...allVelo)) + 5;
+        chart.options.scales.y.min = Math.max(35, Math.floor(Math.min(...allVelo)) - 8);
+        chart.options.scales.y.max = Math.ceil(Math.max(...allVelo)) + 8;
     }
     if (allSpin.length > 0) {
-        chart.options.scales.y1.min = Math.max(1100, Math.floor(Math.min(...allSpin)) - 100);
-        chart.options.scales.y1.max = Math.ceil(Math.max(...allSpin)) + 100;
+        chart.options.scales.y1.min = Math.max(1100, Math.floor(Math.min(...allSpin)) - 150);
+        chart.options.scales.y1.max = Math.ceil(Math.max(...allSpin)) + 150;
     }
 
     chartData.labels.push(pitchCount);
@@ -231,16 +261,25 @@ function simulatePitch() {
     chart.update();
 }
 
-function updateCumulativeStress(speed, spin) {
-    let raw = pitchCount * 3.3 * stressMultiplier;
-    raw += (speed - 48) * 1.1;
-    raw += (spin - 1700) / 40;
-    raw += ((recentSpeeds.reduce((a,b)=>a+b,0)/recentSpeeds.length || 0) - 50) * 0.7;
+function updateCumulativeStress(speed, spin, isFastball) {
+    const dailyLimit = getDailyPitchLimit();
+    
+    let baseVelo = 38 + (profile.age - 8) * 2.15 + (profile.height - 55) * 0.32 + (profile.weight - 80) * 0.085;
+    if (profile.sex === 'girl') baseVelo *= 0.9;
+    let expectedVelo = isFastball ? baseVelo + 3 : baseVelo * 0.82 + 3.5;
 
-    maxStress = Math.max(maxStress, raw);
-    maxStress = Math.min(100, maxStress);
+    let factor = isFastball ? 1.00 : 1.28;
+    factor += (speed - expectedVelo) * 0.012;
+    factor += (spin - 1850) * 0.00019;
 
-    let percent = Math.round(maxStress);
+    factor = Math.max(0.82, Math.min(1.65, factor));
+
+    let perPitch = (100 / dailyLimit) * factor;
+    perPitch = Math.max(0.35, perPitch);
+
+    armStress = Math.min(100, armStress + perPitch);
+
+    let percent = Math.round(armStress);
     document.getElementById('stressPercent').textContent = percent;
     document.getElementById('stressBar').style.width = percent + '%';
 
@@ -275,7 +314,7 @@ function resetSession() {
     velocities = [];
     spins = [];
     recentSpeeds = [];
-    maxStress = 0;
+    armStress = 0;
 
     document.getElementById('pitchCount').textContent = '0';
     document.getElementById('lastVelo').textContent = '--';
