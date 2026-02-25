@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Pitch Monitor</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to bottom, #111, #222);
+            color: white;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        h1 {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            animation: glow 2s infinite alternate;
+        }
+        .display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            width: 80%;
+            max-width: 400px;
+        }
+        .display:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 255, 136, 0.5);
+        }
+        #count {
+            color: #ffcc00;
+            text-shadow: 0 0 5px #ffcc00;
+        }
+        #speed {
+            color: #00ff88;
+            text-shadow: 0 0 5px #00ff88;
+        }
+        #spin {
+            color: #ff4444;
+            text-shadow: 0 0 5px #ff4444;
+        }
+        #stress {
+            font-size: 2.2rem;
+            margin: 30px 0;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.4);
+            transition: all 0.5s;
+            width: 80%;
+            max-width: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+        #stress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1), transparent);
+            opacity: 0.5;
+        }
+        .green {
+            background: linear-gradient(135deg, #004400, #008800);
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+        .yellow {
+            background: linear-gradient(135deg, #444400, #888800);
+            color: #ffff00;
+            text-shadow: 0 0 10px #ffff00;
+        }
+        .red {
+            background: linear-gradient(135deg, #440000, #880000);
+            color: #ff4444;
+            text-shadow: 0 0 10px #ff4444;
+            animation: pulse 1.5s infinite;
+        }
+        button {
+            background: linear-gradient(135deg, #0066ff, #00aaff);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 20px;
+            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.5);
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #0088ff, #00ccff);
+            box-shadow: 0 6px 20px rgba(0, 136, 255, 0.7);
+            transform: translateY(-2px);
+        }
+        @keyframes glow {
+            from { text-shadow: 0 0 5px #00ff88; }
+            to { text-shadow: 0 0 15px #00ff88; }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Pitch Monitor</h1>
+    <div class="display">Pitch Count: <span id="count">0</span></div>
+    <div class="display">Speed: <span id="speed">-- mph</span></div>
+    <div class="display">Spin Rate: <span id="spin">-- rpm</span></div>
+
+    <div id="stress" class="green">Arm Stress: Low (Safe - Keep going!)</div>
+
+    <br>
+    <button onclick="simulatePitch()">Fake Pitch (for testing)</button>
+
+    <script>
+        let pitchCount = 0;
+        let recentSpeeds = []; // Last 10 speeds
+        let recentSpins = []; // Last 10 spins (new)
+        let maxStressLevel = 0; // Track highest achieved stress (0=low,1=med,2=high)
+
+        const countDisplay = document.getElementById('count');
+        const speedDisplay = document.getElementById('speed');
+        const spinDisplay = document.getElementById('spin');
+        const stressDisplay = document.getElementById('stress');
+
+        function updateStress(speed, spin) {
+            // Add to recent histories
+            recentSpeeds.push(parseFloat(speed));
+            if (recentSpeeds.length > 10) recentSpeeds.shift();
+            recentSpins.push(spin);
+            if (recentSpins.length > 10) recentSpins.shift();
+
+            // Base from count (grows after ~30-40)
+            let countStress = Math.min(80, pitchCount * 1.2);
+
+            // Velocity factor (higher = more stress)
+            let velocityFactor = (parseFloat(speed) - 48) / (62 - 48); // 0-1
+            let velStress = velocityFactor * 40;
+
+            // Spin factor (higher spin = more torque/stress, especially >1600 rpm)
+            let spinFactor = (spin - 1300) / (1900 - 1300); // 0-1
+            let spinStress = spinFactor * 30; // Up to +30 for high spin
+
+            // Fatigue proxy: high recent avg speed/spin multiplies
+            let avgRecentSpeed = recentSpeeds.reduce((a, b) => a + b, 0) / recentSpeeds.length || 0;
+            let avgRecentSpin = recentSpins.reduce((a, b) => a + b, 0) / recentSpins.length || 0;
+            let fatigueMultiplier = 1.0;
+            if (avgRecentSpeed > 55 || avgRecentSpin > 1700) fatigueMultiplier = 1.5;
+            else if (avgRecentSpeed > 52 || avgRecentSpin > 1600) fatigueMultiplier = 1.2;
+
+            // Total stress
+            let totalStress = (countStress + velStress + spinStress) * fatigueMultiplier;
+
+            // Enforce non-decreasing: use max of current calc and previous max
+            totalStress = Math.max(totalStress, getStressFromLevel(maxStressLevel));
+
+            // Classify and update max level
+            let newLevel = 0;
+            if (totalStress < 40) {
+                newLevel = 0;
+            } else if (totalStress < 70) {
+                newLevel = 1;
+            } else {
+                newLevel = 2;
+            }
+            maxStressLevel = Math.max(maxStressLevel, newLevel);
+
+            // Display based on level
+            let level, message, className;
+            if (maxStressLevel === 0) {
+                level = 'Low';
+                message = 'Safe - Keep going!';
+                className = 'green';
+            } else if (maxStressLevel === 1) {
+                level = 'Medium';
+                message = 'Caution - Monitor arm, consider rest soon';
+                className = 'yellow';
+            } else {
+                level = 'High';
+                message = 'High Risk - Stop pitching to prevent injury!';
+                className = 'red';
+            }
+
+            stressDisplay.textContent = `Arm Stress: ${level} (${message})`;
+            stressDisplay.className = className;
+        }
+
+        // Helper: min stress for a level
+        function getStressFromLevel(level) {
+            if (level === 0) return 0;
+            if (level === 1) return 40;
+            return 70;
+        }
+
+        // Simulate pitch
+        function simulatePitch() {
+            const minSpeed = 48;
+            const maxSpeed = 62;
+            const speed = (Math.random() * (maxSpeed - minSpeed) + minSpeed).toFixed(1);
+
+            const minSpin = 1300;
+            const maxSpin = 1900;
+            const spin = Math.floor(Math.random() * (maxSpin - minSpin + 1) + minSpin);
+
+            pitchCount++;
+            countDisplay.textContent = pitchCount;
+
+            speedDisplay.textContent = speed + ' mph';
+            spinDisplay.textContent = spin + ' rpm';
+
+            updateStress(speed, spin);
+        }
+    </script>
+
+</body>
+</html>
